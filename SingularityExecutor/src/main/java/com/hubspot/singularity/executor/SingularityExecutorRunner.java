@@ -1,7 +1,9 @@
 package com.hubspot.singularity.executor;
 
-import org.apache.mesos.MesosExecutorDriver;
+import java.io.IOException;
+
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,6 +11,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
+import com.groupon.mesos.JesosExecutorDriver;
 import com.hubspot.mesos.JavaUtils;
 import com.hubspot.singularity.executor.config.SingularityExecutorConfigurationLoader;
 import com.hubspot.singularity.executor.config.SingularityExecutorModule;
@@ -49,9 +52,13 @@ public class SingularityExecutorRunner {
   public Protos.Status run() {
     LOG.info("{} starting MesosExecutorDriver...", name);
 
-    final MesosExecutorDriver driver = new MesosExecutorDriver(singularityExecutor);
-
-    return driver.run();
+    try(final JesosExecutorDriver driver = new JesosExecutorDriver(singularityExecutor)) {
+      return driver.run();
+    }
+    catch (IOException e) {
+      LOG.error("While instantiating executor driver!", e);
+      return Status.DRIVER_NOT_STARTED;
+    }
   }
 
 }
